@@ -6,7 +6,7 @@ import pandas as pd
 import dask_profiling.formatters as formatters
 import dask_profiling.templates as templates
 import dask_profiling.plot as plot
-
+import cudf
 
 def to_html(sample, stats_object):
     """Generate a HTML report from summary statistics and a given sample.
@@ -32,6 +32,14 @@ def to_html(sample, stats_object):
 
     value_formatters = formatters.value_formatters
     row_formatters = formatters.row_formatters
+    
+    #Code added by Rahul to enable dask_cudf profiling
+    print("This is the type of data at ""to_html""",type(stats_object))
+    #print("This is the type of the first part of tuple",type(sample[0]))
+    #print("This is the type of the second part of tuple", type(sample[1]))
+    #Converting the cudf.Dataframe to pandas.Dataframe
+    if isinstance(sample,cudf.Dataframe):
+        sample = sample.to_pandas()
 
     if not isinstance(sample, pd.DataFrame):
         raise TypeError("sample must be of type pandas.DataFrame")

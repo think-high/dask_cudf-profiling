@@ -341,7 +341,8 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     ------
         * The section dedicated to check the correlation should be externalized
     """
-
+    #Rahul - dask_cudf profiling update
+    #This isinstance can be checked for dask_cudf also. And based on dask_cudf or dask, the rest of the part should be either pandas or cudf.
     if not isinstance(df, dd.DataFrame):
         raise TypeError("df must be of type dask.dataframe.DataFrame")
     # too expensive. TODO: workaround
@@ -439,6 +440,10 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     #             names.append(name)
     # variable_stats = pd.concat(ldesc, join_axes=pd.Index([names]), axis=1)
     # variable_stats.columns.names = df.columns.names
+
+    #Updated by Rahul for dask_cudf understanding -- Temp code
+    print(ldesc,flush=True)
+    return ldesc
     variable_stats = pd.DataFrame.from_dict(compute(ldesc)[0])
 
     # General statistics

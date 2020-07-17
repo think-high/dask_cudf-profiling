@@ -66,6 +66,9 @@ class ProfileReport(object):
 
         description_set = describe_df(df, **kwargs)
 
+        #Rahul dask_cudf profiling -- temp part of code
+        #return description_set
+
         self.html = to_html(sample,
                             description_set)
 
