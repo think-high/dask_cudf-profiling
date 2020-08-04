@@ -38,7 +38,7 @@ def to_html(sample, stats_object):
     #print("This is the type of the first part of tuple",type(sample[0]))
     #print("This is the type of the second part of tuple", type(sample[1]))
     #Converting the cudf.Dataframe to pandas.Dataframe
-    if isinstance(sample,cudf.Dataframe):
+    if isinstance(sample,cudf.DataFrame):
         sample = sample.to_pandas()
 
     if not isinstance(sample, pd.DataFrame):
@@ -52,6 +52,9 @@ def to_html(sample, stats_object):
             "stats_object badly formatted. Did you generate this using the dask_profiling.describe() function?")
 
     def fmt(value, name):
+        #dask profiling edit
+        print("Type of data in dask_profiling.report.fmt() for ", name, " is ", type(value))
+        
         if pd.isnull(value):
             return ""
         if name in value_formatters:
@@ -103,8 +106,13 @@ def to_html(sample, stats_object):
         freq_missing = n - sum(freqtable)
         max_freq = max(freqtable.values[0], freq_other, freq_missing)
 
-        # TODO: Correctly sort missing and other
+        # dask_cudf profiling
+        # freqtable.items() is giving error. Debugging that here.
+        print("The type of freqtable data at dask_profiling.report.freq_table is ", type(freqtable))
+        print("The type of freqtable data at dask_profiling.report.freq_table iloc is ", type(freqtable.iloc[0:max_number_to_print]))
 
+
+        # TODO: Correctly sort missing and other
         for label, freq in six.iteritems(freqtable.iloc[0:max_number_to_print]):
             freq_rows_html += _format_row(freq, label, max_freq, row_template, n)
 

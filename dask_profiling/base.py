@@ -2,6 +2,8 @@
 """Common parts to all other modules, mainly utility functions.
 """
 import pandas as pd
+import cudf
+import dask_cudf
 
 TYPE_CAT = 'CAT'
 """String: A categorical variable"""
@@ -48,8 +50,11 @@ def get_groupby_statistic(data):
     value_counts_without_nan = data.dropna().value_counts()
     distinct_count_with_nan = value_counts_with_nan.count()
 
-    if value_counts_without_nan.index.head(50).inferred_type == "mixed":
-        raise TypeError('Not supported mixed type')
+    #Rahul dask_cudf profiling edit
+    #Ignoring the check of "mixed" type for dask_cudf.Series. Will have to raise a Feature request
+    if not isinstance(value_counts_without_nan,dask_cudf.Series):
+        if value_counts_without_nan.index.head(50).inferred_type == "mixed":
+            raise TypeError('Not supported mixed type')
 
     result = [value_counts_without_nan, distinct_count_with_nan]
 
@@ -100,8 +105,12 @@ def get_vartype(data):
     vartype = None
     try:
         distinct_count = get_groupby_statistic(data)[1].compute()
-        leng = data.size
-
+        #dask_cudf profiling edit.
+        #using len() instead of size for cudf.Series
+        if isinstance(data,cudf.Series):
+            leng = len(data)
+        else:
+            leng = data.size
         if distinct_count <= 1:
             vartype = S_TYPE_CONST
         elif pd.api.types.is_bool_dtype(data) or (distinct_count == 2 and pd.api.types.is_numeric_dtype(data)):
@@ -114,7 +123,10 @@ def get_vartype(data):
             vartype = S_TYPE_UNIQUE
         else:
             vartype = TYPE_CAT
+        #dask_cudf profiling edit.
+        print("Getting var type worked")
     except:
+
         vartype = S_TYPE_UNSUPPORTED
 
     if data._name is not None:

@@ -14,6 +14,7 @@ from pkg_resources import resource_filename
 import dask_profiling.formatters as formatters
 import dask_profiling.base as base
 from dask_profiling.plot import histogram, mini_histogram
+import cupy
 
 def describe_numeric_1d(series, **kwargs):
     """Compute summary statistics of a numerical (`TYPE_NUM`) variable (a Series).
@@ -45,21 +46,47 @@ def describe_numeric_1d(series, **kwargs):
     _series_no_na = series.dropna()
     for percentile in np.array([0.05, 0.25, 0.5, 0.75, 0.95]):
         # The dropna() is a workaround for https://github.com/pydata/pandas/issues/13098
-        stats[_percentile_format.format(percentile)] = _series_no_na.quantile(percentile)
+
+        #dask_profiling edit
+        # It is of datatype dask.Dataframe.scalar and after computing it becomes cupy.ndarray.
+        # Since we finally need numpy.ndarray, I am computing first and then converting to ndarray here itself.
+        #stats[_percentile_format.format(percentile)] = _series_no_na.quantile(percentile)
+        #print("The type of percentile stats", type(compute(stats[_percentile_format.format(percentile)])[0]))
+        stats[_percentile_format.format(percentile)] = cupy.asnumpy(compute(_series_no_na.quantile(percentile))[0])
+        #stats[_percentile_format.format(percentile)] = cupy.asnumpy(_series_no_na.quantile(percentile))
     stats['iqr'] = stats['75%'] - stats['25%']
-    stats['kurtosis'] = delayed(sp.stats.kurtosis)(series)
+
+    # dask_profiling edit
+    # calculating 'kurtosis' is giving error in scipy. Commenting for now, pushed for later
+    # stats['kurtosis'] = delayed(sp.stats.kurtosis)(series)
+
+
     stats['skewness'] = delayed(float)(dask_stats.skew(series.to_dask_array()))
     stats['sum'] = series.sum()
     stats['mad'] = series.sub(series.mean()).abs().mean()
     # removed conditional for testing (no purpose was seen)
     # stats['cv'] = stats['std'] / stats['mean'] if stats['mean'] else np.NaN
     stats['cv'] = stats['std'] / stats['mean']
-    stats['n_zeros'] = (series.size - delayed(np.count_nonzero)(series))
+
+    # dask_profiling edit
+    # changing np.count_nonzero to cupy.count_nonzero
+    #stats['n_zeros'] = (series.size - delayed(np.count_nonzero)(series))
+    # dask_profiling edit
+    # converting cupy.ndarray to np.ndarray
+    # This may not be the best way because I have to run compute here while delayed operation was used here of course for some reason.
+    # print("The type of n_zeros is ", type(stats['n_zeros']))
+    # print("The type of computed n_zeros is ", type(compute(stats['n_zeros'])[0]))
+    stats['n_zeros'] = cupy.asnumpy(compute((series.size - delayed(cupy.count_nonzero)(series)))[0])
+
     stats['p_zeros'] = stats['n_zeros'] * 1.0 / series.size
+
+    #dask_cudf profiling edit
+    #Commenting the histogram creation for now
+
     # Histograms
     # TODO: optimize histogram and mini_histogram calls (a big overlap in computation)
-    stats['histogram'] = histogram(series, **kwargs)
-    stats['mini_histogram'] = mini_histogram(series, **kwargs)
+    #stats['histogram'] = histogram(series, **kwargs)
+    #stats['mini_histogram'] = mini_histogram(series, **kwargs)
 
     return stats
 
@@ -84,10 +111,14 @@ def describe_date_1d(series):
     stats['min'] = series.min()
     stats['max'] = series.max()
     stats['range'] = stats['max'] - stats['min']
+
+    #dask_cudf profiling edit
+    #Commenting the histogram creation for now
+
     # Histograms
     # TODO: optimize histogram and mini_histogram calls (a big overlap in computation)
-    stats['histogram'] = histogram(series)
-    stats['mini_histogram'] = mini_histogram(series)
+    #stats['histogram'] = histogram(series)
+    #stats['mini_histogram'] = mini_histogram(series)
     
     return stats
 
@@ -197,6 +228,14 @@ def describe_supported(series, **kwargs):
     else:
         mode = series.head(1, npartitions=-1).values[0]
 
+    #dask_profiling edit
+    #mode is a cupy array instead of a numpy array. Checking that
+    # print("Type of data in mode at dask_profiling.describe.describe_supported is ", type(mode))
+    # print("Data in mode at dask_profiling.describe.describe_supported is \n", mode)
+    # Converting the cupy.ndarray to numpy.ndarray
+    mode = cupy.asnumpy(mode)
+
+
     results_data = {'count': count,
                     'distinct_count': distinct_count,
                     'p_missing': 1 - count * 1.0 / leng,
@@ -274,6 +313,9 @@ def describe_1d(data, **kwargs):
     result = dict()
 
     vartype = base.get_vartype(data)
+    
+    #dask_cudf profiling -- Getting the understood vartype of the current col
+    print("Understood type of this col data ", vartype)
 
     if vartype == base.S_TYPE_UNSUPPORTED:
         result.update(describe_unsupported(data))
@@ -386,8 +428,11 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     #     ldesc = {col: s for col, s in pool.map(local_multiprocess_func, df.iteritems())}
     #     pool.close()
 
+
     ldesc = dict()
     for col in df.columns:
+        #dask_cudf profiling edit
+        print("This is the current col being described ", col)
         desc = describe_1d(df[col])
         ldesc[col] = desc
 
@@ -403,6 +448,10 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
         Better way would be to find out which variable causes the highest increase in multicollinearity.
         '''
         corr = dfcorrPear.copy()
+
+        #dask_cudf profiling edit
+        print("This is the type for pearson correlation data",type(corr),flush=True)
+
         for x, corr_x in corr.iterrows():
             if correlation_overrides and x in correlation_overrides:
                 continue
@@ -442,8 +491,8 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     # variable_stats.columns.names = df.columns.names
 
     #Updated by Rahul for dask_cudf understanding -- Temp code
-    print(ldesc,flush=True)
-    return ldesc
+    #print(ldesc,flush=True)
+    #return ldesc
     variable_stats = pd.DataFrame.from_dict(compute(ldesc)[0])
 
     # General statistics

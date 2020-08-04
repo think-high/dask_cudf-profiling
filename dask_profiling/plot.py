@@ -124,6 +124,10 @@ def correlation_matrix(corrdf, title, **kwargs):
     imgdata = BytesIO()
     fig_cor, axes_cor = plt.subplots(1, 1)
     labels = corrdf.columns
+    #dask_cudf profiling edit
+    print("Data type at plot.correlation_matrix",type(corrdf),flush=True)
+    #converting the dataframe to float
+    corrdf = corrdf.astype("float32")
     matrix_image = axes_cor.imshow(corrdf, vmin=-1, vmax=1, interpolation="nearest", cmap='bwr')
     plt.title(title, size=18)
     plt.colorbar(matrix_image)
