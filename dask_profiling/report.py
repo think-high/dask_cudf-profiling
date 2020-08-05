@@ -96,6 +96,11 @@ def to_html(sample, stats_object):
         if max_number_to_print > n:
                 max_number_to_print=n
 
+        #dask_cudf profiling edit
+        #converting the freqtable to pandas for iteritems use on line 124
+        #And also for iloc[10:] usage on line 105
+        freqtable = freqtable.to_pandas()
+
         if max_number_to_print < len(freqtable):
             freq_other = sum(freqtable.iloc[max_number_to_print:])
             min_freq = freqtable.values[max_number_to_print]
@@ -111,7 +116,10 @@ def to_html(sample, stats_object):
         print("The type of freqtable data at dask_profiling.report.freq_table is ", type(freqtable))
         print("The type of freqtable data at dask_profiling.report.freq_table iloc is ", type(freqtable.iloc[0:max_number_to_print]))
 
-
+        #dask_cudf profiling edit
+        #converting the freqtable to pandas for iteritems use on line 124 (six.iteritems)
+        #Already taken care of this above
+        
         # TODO: Correctly sort missing and other
         for label, freq in six.iteritems(freqtable.iloc[0:max_number_to_print]):
             freq_rows_html += _format_row(freq, label, max_freq, row_template, n)
@@ -128,12 +136,16 @@ def to_html(sample, stats_object):
 
     def extreme_obs_table(freqtable, table_template, row_template, number_to_print, n, ascending = True):
 
+        # dask_cudf profiling
+        # removing the mixed inferred_type lookup since cudf index doesn't have `inferred_type` as the parameter. 
+
         # If it's mixed between base types (str, int) convert to str. Pure "mixed" types are filtered during type discovery
-        if "mixed" in freqtable.index.inferred_type:
-            try:
-                freqtable.index = freqtable.index.astype(str)
-            except TypeError:
-                freqtable.index = map(str, freqtable.index)
+        # if "mixed" in freqtable.index.inferred_type:
+        #     try:
+        #         freqtable.index = freqtable.index.astype(str)
+        #     except TypeError:
+        #         freqtable.index = map(str, freqtable.index)
+
 
         sorted_freqTable = freqtable.sort_index()
 
@@ -144,6 +156,11 @@ def to_html(sample, stats_object):
 
         freq_rows_html = ''
         max_freq = max(obs_to_print.values)
+
+        #dask_cudf profiling edit
+        #converting the obs_to_print to pandas for iteritems.
+        obs_to_print = obs_to_print.to_pandas()
+
 
         for label, freq in six.iteritems(obs_to_print):
             freq_rows_html += _format_row(freq, label, max_freq, row_template, n)
@@ -167,6 +184,7 @@ def to_html(sample, stats_object):
             row_classes[col] = row_formatters[col](row[col])
             if row_classes[col] == "alert" and col in templates.messages:
                 messages.append(templates.messages[col].format(formatted_values, varname = idx))
+
 
         if row['type'] in {'CAT', 'BOOL'}:
             formatted_values['minifreqtable'] = freq_table(stats_object['freq'][idx], n_obs,
@@ -201,8 +219,12 @@ def to_html(sample, stats_object):
         rows_html += templates.row_templates_dict[row['type']].render(values=formatted_values, row_classes=row_classes)
     render_htmls['rows_html'] = rows_html
 
+    #dask_cudf profiling edit
+    #converting the stats_object['table'] to pandas for iteritems.
+    #removing the to_pandas for now
     # Overview
     formatted_values = {k: fmt(v, k) for k, v in six.iteritems(stats_object['table'])}
+
 
     row_classes={}
     for col in six.viewkeys(stats_object['table']) & six.viewkeys(row_formatters):
