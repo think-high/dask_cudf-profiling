@@ -7,9 +7,10 @@ See also for a short description of docstring:
 https://stackoverflow.com/questions/3898572/what-is-the-standard-python-docstring-format
 """
 import codecs
-import dask_profiling.templates as templates
-from dask_profiling.describe import describe as describe_df
-from dask_profiling.report import to_html
+import dask_cudf_profiling.templates as templates
+from dask_cudf_profiling.describe import describe as describe_df
+from dask_cudf_profiling.report import to_html
+import time
 
 
 NO_OUTPUTFILE = "dask_profiling.no_outputfile"
@@ -64,13 +65,25 @@ class ProfileReport(object):
         """
         sample = kwargs.get('sample', df.head())
 
+        #dask_cudf_profiling timing
+        start = time.time()
         description_set = describe_df(df, **kwargs)
+        end = time.time()
+
+        #time-profiling
+        print("Total time elapsed in describe_df() is ", end-start)
 
         #Rahul dask_cudf profiling -- temp part of code
         #return description_set
 
+        #dask_cudf_profiling timing
+        start = time.time()
         self.html = to_html(sample,
                             description_set)
+        end = time.time()
+        #time-profiling
+        print("Total time elapsed in to_html() is ", end-start)
+
 
         self.description_set = description_set
 

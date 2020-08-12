@@ -11,10 +11,11 @@ from dask import delayed, compute
 from dask.array import stats as dask_stats
 import matplotlib
 from pkg_resources import resource_filename
-import dask_profiling.formatters as formatters
-import dask_profiling.base as base
-from dask_profiling.plot import histogram, mini_histogram
+import dask_cudf_profiling.formatters as formatters
+import dask_cudf_profiling.base as base
+from dask_cudf_profiling.plot import histogram, mini_histogram
 import cupy
+import time
 
 def describe_numeric_1d(series, **kwargs):
     """Compute summary statistics of a numerical (`TYPE_NUM`) variable (a Series).
@@ -36,34 +37,107 @@ def describe_numeric_1d(series, **kwargs):
     stats = dict()
 
     stats['type'] = base.TYPE_NUM
+
+    #dask_cudf profiling timing
+    start = time.time()
     stats['mean'] = series.mean()
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing mean is ", end-start)
+
+    #dask_cudf profiling timing
+    start = time.time()
     stats['std'] = series.std()
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing std is ", end-start)
+
+    #dask_cudf profiling timing
+    start = time.time()
     stats['variance'] = series.var()
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing variance is ", end-start)
+
+    #dask_cudf profiling timing
+    start = time.time()
     stats['min'] = series.min()
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing min is ", end-start)
+
+    #dask_cudf profiling timing
+    start = time.time()
     stats['max'] = series.max()
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing max is ", end-start)
+
     stats['range'] = stats['max'] - stats['min']
+
+    #dask_cudf profiling timing
+    start = time.time()
     # TODO: Remove this "lazy" operation
     _series_no_na = series.dropna()
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in dropping NA values is ", end-start)
+
+    
+    #dask_cudf profiling timing
+    start = time.time()
     for percentile in np.array([0.05, 0.25, 0.5, 0.75, 0.95]):
         # The dropna() is a workaround for https://github.com/pydata/pandas/issues/13098
 
         #dask_profiling edit
         # It is of datatype dask.Dataframe.scalar and after computing it becomes cupy.ndarray.
         # Since we finally need numpy.ndarray, I am computing first and then converting to ndarray here itself.
-        #stats[_percentile_format.format(percentile)] = _series_no_na.quantile(percentile)
+        stats[_percentile_format.format(percentile)] = _series_no_na.quantile(percentile)
         #print("The type of percentile stats", type(compute(stats[_percentile_format.format(percentile)])[0]))
-        stats[_percentile_format.format(percentile)] = cupy.asnumpy(compute(_series_no_na.quantile(percentile))[0])
+        #stats[_percentile_format.format(percentile)] = cupy.asnumpy(compute(_series_no_na.quantile(percentile))[0])
         #stats[_percentile_format.format(percentile)] = cupy.asnumpy(_series_no_na.quantile(percentile))
     stats['iqr'] = stats['75%'] - stats['25%']
+    end = time.time()
 
-    # dask_profiling edit
+    #time-profiling
+    print("Total time elapsed in computing percentile values is ", end-start)
+
+    # dask_cudf_profiling edit
     # calculating 'kurtosis' is giving error in scipy. Commenting for now, pushed for later
     # stats['kurtosis'] = delayed(sp.stats.kurtosis)(series)
 
-
+    #dask_cudf profiling timing
+    start = time.time()
     stats['skewness'] = delayed(float)(dask_stats.skew(series.to_dask_array()))
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing skewness values is ", end-start)
+
+    
+    #dask_cudf profiling timing
+    start = time.time()
     stats['sum'] = series.sum()
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing sum values is ", end-start)
+
+    #dask_cudf profiling timing
+    start = time.time()
     stats['mad'] = series.sub(series.mean()).abs().mean()
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing MAD values is ", end-start)
+
+
     # removed conditional for testing (no purpose was seen)
     # stats['cv'] = stats['std'] / stats['mean'] if stats['mean'] else np.NaN
     stats['cv'] = stats['std'] / stats['mean']
@@ -76,7 +150,15 @@ def describe_numeric_1d(series, **kwargs):
     # This may not be the best way because I have to run compute here while delayed operation was used here of course for some reason.
     # print("The type of n_zeros is ", type(stats['n_zeros']))
     # print("The type of computed n_zeros is ", type(compute(stats['n_zeros'])[0]))
-    stats['n_zeros'] = cupy.asnumpy(compute((series.size - delayed(cupy.count_nonzero)(series)))[0])
+    
+    #dask_cudf profiling timing
+    start = time.time()
+    stats['n_zeros'] = (series.size - delayed(cupy.count_nonzero)(series))
+    #stats['n_zeros'] = cupy.asnumpy(compute((series.size - delayed(cupy.count_nonzero)(series)))[0])
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing n_zeros values is ", end-start)
 
     stats['p_zeros'] = stats['n_zeros'] * 1.0 / series.size
 
@@ -85,8 +167,22 @@ def describe_numeric_1d(series, **kwargs):
 
     # Histograms
     # TODO: optimize histogram and mini_histogram calls (a big overlap in computation)
-    #stats['histogram'] = histogram(series, **kwargs)
-    #stats['mini_histogram'] = mini_histogram(series, **kwargs)
+
+    #dask_cudf profiling timing
+    start = time.time()
+    stats['histogram'] = histogram(series, **kwargs)
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing histogram is ", end-start)
+
+    #dask_cudf profiling timing
+    start = time.time()
+    stats['mini_histogram'] = mini_histogram(series, **kwargs)
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing mini-histogram is ", end-start)
 
     return stats
 
@@ -117,8 +213,8 @@ def describe_date_1d(series):
 
     # Histograms
     # TODO: optimize histogram and mini_histogram calls (a big overlap in computation)
-    #stats['histogram'] = histogram(series)
-    #stats['mini_histogram'] = mini_histogram(series)
+    stats['histogram'] = histogram(series)
+    stats['mini_histogram'] = mini_histogram(series)
     
     return stats
 
@@ -428,6 +524,8 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     #     ldesc = {col: s for col, s in pool.map(local_multiprocess_func, df.iteritems())}
     #     pool.close()
 
+    #dask_cudf_profiling timing
+    start = time.time()
 
     ldesc = dict()
     for col in df.columns:
@@ -435,6 +533,11 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
         print("This is the current col being described ", col)
         desc = describe_1d(df[col])
         ldesc[col] = desc
+
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in describe_1d of all columns is ", end-start)
 
     # Get correlations
     dfcorrPear = df.corr(method="pearson")
@@ -493,7 +596,14 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     #Updated by Rahul for dask_cudf understanding -- Temp code
     #print(ldesc,flush=True)
     #return ldesc
+
+    #dask_cudf_profiling timing
+    start = time.time()
     variable_stats = pd.DataFrame.from_dict(compute(ldesc)[0])
+    end = time.time()
+
+    #time-profiling
+    print("Total time elapsed in computing and getting variable stats is ", end-start)
 
     # General statistics
     table_stats = {}

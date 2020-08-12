@@ -1,6 +1,7 @@
 # coding=UTF-8
 """Formatters are utilities for formatting numbers by adding HTML code or CSS classes"""
 import numpy as np
+import cupy
 
 SKEWNESS_CUTOFF = 20
 DEFAULT_FLOAT_FORMATTER = u'dask_profiling.__default_float_formatter'
@@ -30,7 +31,12 @@ def fmt_bytesize(num, suffix='B'):
 
 
 def fmt_percent(v):
-    return  "{:2.1f}%".format(v*100)
+    #dask_cudf profiling edit
+    #Adding v.item() instead based on the explanation here: https://github.com/cupy/cupy/issues/2281
+    if isinstance(v,cupy.ndarray):
+        return  "{:2.1f}%".format(v.item()*100)
+    else:    
+        return  "{:2.1f}%".format(v*100)
 
 value_formatters={
     u'freq': (lambda v: gradient_format(v, 0, 62000, (30, 198, 244), (99, 200, 72))),

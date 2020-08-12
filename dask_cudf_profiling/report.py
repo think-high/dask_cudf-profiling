@@ -3,10 +3,11 @@
 import sys
 import six
 import pandas as pd
-import dask_profiling.formatters as formatters
-import dask_profiling.templates as templates
-import dask_profiling.plot as plot
+import dask_cudf_profiling.formatters as formatters
+import dask_cudf_profiling.templates as templates
+import dask_cudf_profiling.plot as plot
 import cudf
+import cupy
 
 def to_html(sample, stats_object):
     """Generate a HTML report from summary statistics and a given sample.
@@ -55,8 +56,12 @@ def to_html(sample, stats_object):
         #dask profiling edit
         print("Type of data in dask_profiling.report.fmt() for ", name, " is ", type(value))
         
-        if pd.isnull(value):
-            return ""
+        if isinstance(value,cupy.ndarray):
+            if cupy.isnan(value):
+                return ""
+        else:
+            if pd.isnull(value):
+                return ""
         if name in value_formatters:
             return value_formatters[name](value)
         elif isinstance(value, float):

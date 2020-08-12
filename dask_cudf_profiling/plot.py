@@ -3,11 +3,13 @@
 
 import base64
 from distutils.version import LooseVersion
-import dask_profiling.base as base
+import dask_cudf_profiling.base as base
 import dask.array as da
 import dask.dataframe as dd
 import matplotlib
 import numpy as np
+import cupy
+
 # Fix #68, this call is not needed and brings side effects in some use cases
 # Backend name specifications are not case-sensitive; e.g., ‘GTKAgg’ and ‘gtkagg’ are equivalent.
 # See https://matplotlib.org/faq/usage_faq.html#what-is-a-backend
@@ -45,7 +47,21 @@ def _plot_histogram(series, bins=10, figsize=(6, 4), facecolor='#337ab7'):
     fig = plt.figure(figsize=figsize)
     plot = fig.add_subplot(111)
 
-    plot.hist(series.dropna().values, bins=bins, facecolor=facecolor)  # TODO: make da.histogram work
+    #dask_cudf_profiling edit
+    #converting to cudf.core.Series and then to pandas Series
+    #print("Converting dask_cudf.Series to pandas.Series for plotting histogram")
+    #series = series.compute()
+    #series = series.to_pandas()
+
+    #dask_cudf_profiling edit
+    #converting to cudf.core.Series and using cupy.histogram to get the histogram frequency and edges
+    series = series.compute()
+    series = series.dropna()
+    frequencies, edges = cupy.histogram(x=cupy.array(series) , bins=bins)
+    center = (edges[:-1] + edges[1:]) / 2
+    plot.bar(center.tolist(), frequencies.tolist(), facecolor=facecolor)
+
+    #plot.hist(series.dropna().values, bins=bins, facecolor=facecolor)  # TODO: make da.histogram work
 
     return plot
 
@@ -63,6 +79,9 @@ def histogram(series, **kwargs):
     str
         The resulting image encoded as a string.
     """
+    #dask_cudf_profiling edit
+    print("The type of Series at dask_profiling.plot.histogram() is ",type(series))
+
     imgdata = BytesIO()
     plot = _plot_histogram(series, **kwargs)
     plot.figure.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.1, wspace=0, hspace=0)

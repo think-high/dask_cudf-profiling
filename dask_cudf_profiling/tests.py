@@ -8,9 +8,9 @@ import pandas as pd
 import dask.dataframe as dd
 from pandas import Series
 import six
-import dask_profiling
-from dask_profiling.describe import describe, describe_1d
-from dask_profiling.report import to_html
+import dask_cudf_profiling
+from dask_cudf_profiling.describe import describe, describe_1d
+from dask_cudf_profiling.report import to_html
 import tempfile
 import shutil
 import os
