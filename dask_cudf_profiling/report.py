@@ -9,6 +9,10 @@ import dask_cudf_profiling.plot as plot
 import cudf
 import cupy
 
+#dask_cudf profiling edit. 
+#Adding verbose call
+verbose = True
+
 def to_html(sample, stats_object):
     """Generate a HTML report from summary statistics and a given sample.
 
@@ -35,7 +39,8 @@ def to_html(sample, stats_object):
     row_formatters = formatters.row_formatters
     
     #Code added by Rahul to enable dask_cudf profiling
-    print("This is the type of data at ""to_html""",type(stats_object))
+    if verbose:
+        print("This is the type of data at ""to_html""",type(stats_object))
     #print("This is the type of the first part of tuple",type(sample[0]))
     #print("This is the type of the second part of tuple", type(sample[1]))
     #Converting the cudf.Dataframe to pandas.Dataframe
@@ -54,7 +59,8 @@ def to_html(sample, stats_object):
 
     def fmt(value, name):
         #dask profiling edit
-        print("Type of data in dask_profiling.report.fmt() for ", name, " is ", type(value))
+        if verbose:
+            print("Type of data in dask_profiling.report.fmt() for ", name, " is ", type(value))
         
         if isinstance(value,cupy.ndarray):
             if cupy.isnan(value):
@@ -118,8 +124,9 @@ def to_html(sample, stats_object):
 
         # dask_cudf profiling
         # freqtable.items() is giving error. Debugging that here.
-        print("The type of freqtable data at dask_profiling.report.freq_table is ", type(freqtable))
-        print("The type of freqtable data at dask_profiling.report.freq_table iloc is ", type(freqtable.iloc[0:max_number_to_print]))
+        if verbose:
+            print("The type of freqtable data at dask_profiling.report.freq_table is ", type(freqtable))
+            print("The type of freqtable data at dask_profiling.report.freq_table iloc is ", type(freqtable.iloc[0:max_number_to_print]))
 
         #dask_cudf profiling edit
         #converting the freqtable to pandas for iteritems use on line 124 (six.iteritems)

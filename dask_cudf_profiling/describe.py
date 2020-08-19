@@ -13,9 +13,13 @@ import matplotlib
 from pkg_resources import resource_filename
 import dask_cudf_profiling.formatters as formatters
 import dask_cudf_profiling.base as base
-from dask_cudf_profiling.plot import histogram, mini_histogram
+from dask_cudf_profiling.plot import histogram, mini_histogram, get_histograms
 import cupy
 import time
+
+#dask_cudf profiling edit. 
+#Adding verbose call
+verbose = True
 
 def describe_numeric_1d(series, **kwargs):
     """Compute summary statistics of a numerical (`TYPE_NUM`) variable (a Series).
@@ -42,25 +46,28 @@ def describe_numeric_1d(series, **kwargs):
     start = time.time()
     stats['mean'] = series.mean()
     end = time.time()
-
-    #time-profiling
-    print("Total time elapsed in computing mean is ", end-start)
+    
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing mean is ", end-start)
 
     #dask_cudf profiling timing
     start = time.time()
     stats['std'] = series.std()
     end = time.time()
 
-    #time-profiling
-    print("Total time elapsed in computing std is ", end-start)
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing std is ", end-start)
 
     #dask_cudf profiling timing
     start = time.time()
     stats['variance'] = series.var()
     end = time.time()
 
-    #time-profiling
-    print("Total time elapsed in computing variance is ", end-start)
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing variance is ", end-start)
 
     #dask_cudf profiling timing
     start = time.time()
@@ -68,7 +75,8 @@ def describe_numeric_1d(series, **kwargs):
     end = time.time()
 
     #time-profiling
-    print("Total time elapsed in computing min is ", end-start)
+    if verbose:
+        print("Total time elapsed in computing min is ", end-start)
 
     #dask_cudf profiling timing
     start = time.time()
@@ -76,7 +84,8 @@ def describe_numeric_1d(series, **kwargs):
     end = time.time()
 
     #time-profiling
-    print("Total time elapsed in computing max is ", end-start)
+    if verbose:
+        print("Total time elapsed in computing max is ", end-start)
 
     stats['range'] = stats['max'] - stats['min']
 
@@ -86,8 +95,9 @@ def describe_numeric_1d(series, **kwargs):
     _series_no_na = series.dropna()
     end = time.time()
 
-    #time-profiling
-    print("Total time elapsed in dropping NA values is ", end-start)
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in dropping NA values is ", end-start)
 
     
     #dask_cudf profiling timing
@@ -106,7 +116,8 @@ def describe_numeric_1d(series, **kwargs):
     end = time.time()
 
     #time-profiling
-    print("Total time elapsed in computing percentile values is ", end-start)
+    if verbose:
+        print("Total time elapsed in computing percentile values is ", end-start)
 
     # dask_cudf_profiling edit
     # calculating 'kurtosis' is giving error in scipy. Commenting for now, pushed for later
@@ -117,8 +128,9 @@ def describe_numeric_1d(series, **kwargs):
     stats['skewness'] = delayed(float)(dask_stats.skew(series.to_dask_array()))
     end = time.time()
 
-    #time-profiling
-    print("Total time elapsed in computing skewness values is ", end-start)
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing skewness values is ", end-start)
 
     
     #dask_cudf profiling timing
@@ -126,16 +138,18 @@ def describe_numeric_1d(series, **kwargs):
     stats['sum'] = series.sum()
     end = time.time()
 
-    #time-profiling
-    print("Total time elapsed in computing sum values is ", end-start)
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing sum values is ", end-start)
 
     #dask_cudf profiling timing
     start = time.time()
     stats['mad'] = series.sub(series.mean()).abs().mean()
     end = time.time()
 
-    #time-profiling
-    print("Total time elapsed in computing MAD values is ", end-start)
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing MAD values is ", end-start)
 
 
     # removed conditional for testing (no purpose was seen)
@@ -157,8 +171,9 @@ def describe_numeric_1d(series, **kwargs):
     #stats['n_zeros'] = cupy.asnumpy(compute((series.size - delayed(cupy.count_nonzero)(series)))[0])
     end = time.time()
 
-    #time-profiling
-    print("Total time elapsed in computing n_zeros values is ", end-start)
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing n_zeros values is ", end-start)
 
     stats['p_zeros'] = stats['n_zeros'] * 1.0 / series.size
 
@@ -169,21 +184,32 @@ def describe_numeric_1d(series, **kwargs):
     # TODO: optimize histogram and mini_histogram calls (a big overlap in computation)
 
     #dask_cudf profiling timing
-    start = time.time()
-    stats['histogram'] = histogram(series, **kwargs)
-    end = time.time()
+    # start = time.time()
+    # stats['histogram'] = histogram(series, **kwargs)
+    # end = time.time()
 
-    #time-profiling
-    print("Total time elapsed in computing histogram is ", end-start)
+    # if verbose:
+    #     #time-profiling
+    #     print("Total time elapsed in computing histogram is ", end-start)
 
+    # #dask_cudf profiling timing
+    # start = time.time()
+    # stats['mini_histogram'] = mini_histogram(series, **kwargs)
+    # end = time.time()
+
+    # if verbose:
+    #     #time-profiling
+    #     print("Total time elapsed in computing mini-histogram is ", end-start)
+    
     #dask_cudf profiling timing
     start = time.time()
-    stats['mini_histogram'] = mini_histogram(series, **kwargs)
+    stats['histogram'], stats['mini_histogram'] = get_histograms(series, **kwargs)
     end = time.time()
-
+    
     #time-profiling
-    print("Total time elapsed in computing mini-histogram is ", end-start)
-
+    if verbose: 
+        print("Total time elapsed in computing histograms is ", end-start)
+    
     return stats
 
 
@@ -213,8 +239,17 @@ def describe_date_1d(series):
 
     # Histograms
     # TODO: optimize histogram and mini_histogram calls (a big overlap in computation)
-    stats['histogram'] = histogram(series)
-    stats['mini_histogram'] = mini_histogram(series)
+    # stats['histogram'] = histogram(series)
+    # stats['mini_histogram'] = mini_histogram(series)
+
+    #dask_cudf profiling timing
+    start = time.time()
+    stats['histogram'], stats['mini_histogram'] = get_histograms(series, **kwargs)
+    end = time.time()
+    
+    #time-profiling
+    if verbose: 
+        print("Total time elapsed in computing histograms is ", end-start)
     
     return stats
 
@@ -299,7 +334,7 @@ def describe_unique_1d(series):
     """
     return {'type': base.S_TYPE_UNIQUE}
 
-def describe_supported(series, **kwargs):
+def describe_supported(series, distinct_count, **kwargs):
     """Compute summary statistics of a supported variable (a Series).
 
     Parameters
@@ -312,13 +347,43 @@ def describe_supported(series, **kwargs):
     dict
         The description of the variable as a dict with keys being stats.
     """
+    #dask_cudf profiling timing
+    start = time.time()
     leng = series.size  # number of observations in the Series
     count = series.count()  # number of non-NaN observations in the Series
+    #dask_cudf profiling: I don't know how does count - series.count() below makes sense. It should essentially be 0.
     n_infinite = count - series.count()  # number of infinte observations in the Series
+    end = time.time()
 
-    value_counts, distinct_count = base.get_groupby_statistic(series)
-    count, distinct_count = compute(count, distinct_count)
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing size and count is ", end-start)
+
+    #dask_cudf profiling timing
+    start = time.time()
+    #dask_cudf profiling
+    #calculating distinct count once and then passing where required.
+    #Only taking value_counts from groupby_statistic. distinct_count is computed previously.
+    value_counts = base.get_groupby_statistic(series)
+    end = time.time()
+
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing get_groupby_statistic is ", end-start)
+
+    #dask_cudf profiling timing
+    start = time.time()
+    count = count.compute()
+    end = time.time()
+
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in computing count and distinct count compute() is ", end-start)
+
     # if all(compute(count > distinct_count, distinct_count > 1)): # Logical AND over the two comparisons
+    # dask_cudf profiling
+    # Need to understand what's happening with the mode to understand if we have to compute(count)
+    # TODO: 
     if count > distinct_count > 1:
         mode = value_counts.index.head(1).values[0] # TODO: lazy mode
     else:
@@ -329,7 +394,7 @@ def describe_supported(series, **kwargs):
     # print("Type of data in mode at dask_profiling.describe.describe_supported is ", type(mode))
     # print("Data in mode at dask_profiling.describe.describe_supported is \n", mode)
     # Converting the cupy.ndarray to numpy.ndarray
-    mode = cupy.asnumpy(mode)
+    #mode = cupy.asnumpy(mode)
 
 
     results_data = {'count': count,
@@ -408,15 +473,32 @@ def describe_1d(data, **kwargs):
 
     result = dict()
 
-    vartype = base.get_vartype(data)
-    
-    #dask_cudf profiling -- Getting the understood vartype of the current col
-    print("Understood type of this col data ", vartype)
+    #dask_cudf profiling
+    #calculating distinct count once and then passing where required.
+    #Calculating here
+    distinct_count = data.nunique().compute()
+
+    #dask_cudf_profiling timing
+    start = time.time()
+    #dask_cudf profiling
+    #calculating distinct count once and then passing where required.
+    vartype = base.get_vartype(data, distinct_count)
+    end = time.time()
+
+    if verbose:
+        #time-profiling
+        print("Total time elapsed in get_vartype is ", end-start)
+
+    if verbose:
+        #dask_cudf profiling -- Getting the understood vartype of the current col
+        print("Understood type of this col data ", vartype)
 
     if vartype == base.S_TYPE_UNSUPPORTED:
         result.update(describe_unsupported(data))
     else:
-        result.update(describe_supported(data))
+        #dask_cudf profiling
+        #calculating distinct count once and then passing where required.
+        result.update(describe_supported(data,distinct_count))
 
         if vartype == base.S_TYPE_CONST:
             result.update(describe_constant_1d(data))
@@ -530,14 +612,16 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     ldesc = dict()
     for col in df.columns:
         #dask_cudf profiling edit
-        print("This is the current col being described ", col)
+        if verbose:
+            print("This is the current col being described ", col)
         desc = describe_1d(df[col])
         ldesc[col] = desc
 
     end = time.time()
 
     #time-profiling
-    print("Total time elapsed in describe_1d of all columns is ", end-start)
+    if verbose:
+        print("Total time elapsed in describe_1d of all columns is ", end-start)
 
     # Get correlations
     dfcorrPear = df.corr(method="pearson")
@@ -553,7 +637,8 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
         corr = dfcorrPear.copy()
 
         #dask_cudf profiling edit
-        print("This is the type for pearson correlation data",type(corr),flush=True)
+        if verbose:
+            print("This is the type for pearson correlation data",type(corr),flush=True)
 
         for x, corr_x in corr.iterrows():
             if correlation_overrides and x in correlation_overrides:
@@ -603,30 +688,57 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     end = time.time()
 
     #time-profiling
-    print("Total time elapsed in computing and getting variable stats is ", end-start)
+    if verbose:
+        print("Total time elapsed in computing and getting variable stats is ", end-start)
 
     # General statistics
     table_stats = {}
 
+    #dask_cudf profiling
+    start = time.time()
     table_stats['n'] = delayed(len)(df)
     table_stats['nvar'] = delayed(len)(df.columns)
     table_stats['total_missing'] = variable_stats.loc['n_missing'].sum() / (table_stats['n'] * table_stats['nvar'])
     unsupported_columns = variable_stats.transpose()[variable_stats.transpose().type != base.S_TYPE_UNSUPPORTED].index.tolist()
     table_stats['n_duplicates'] = (delayed(len)(df[unsupported_columns].drop_duplicates()) - delayed(len)(df)) if len(unsupported_columns) > 0 else 0
+    end = time.time()
+
+    #time-profiling
+    if verbose:
+        print("Total time elapsed in adding initial stats to table stats is ", end-start)
+
+    #dask_cudf profiling
+    start = time.time()
 
     memsize = df.memory_usage(index=True).sum()
     table_stats, memsize = compute(table_stats, memsize)
     table_stats['memsize'] = formatters.fmt_bytesize(memsize)
     table_stats['recordsize'] = formatters.fmt_bytesize(memsize / table_stats['n'])
+    end = time.time()
 
+    #time-profiling
+    if verbose:
+        print("Total time elapsed in adding memsize to table stats is ", end-start)
+
+    #dask_cudf profiling
+    start = time.time()
     table_stats.update({k: 0 for k in ("NUM", "DATE", "CONST", "CAT", "UNIQUE", "CORR", "RECODED", "BOOL", "UNSUPPORTED")})
     table_stats.update(dict(variable_stats.loc['type'].value_counts()))
     table_stats['REJECTED'] = table_stats['CONST'] + table_stats['CORR'] + table_stats['RECODED']
 
-    return compute({
+    results = compute({
         'table': table_stats,
         'variables': variable_stats.T,
-        'freq': {k: (base.get_groupby_statistic(df[k])[0] if variable_stats[k].type != base.S_TYPE_UNSUPPORTED else None) for k in df.columns},
+        #dask_cudf profiling. Incorporating the change in get_groupby_statistic here.
+        'freq': {k: (base.get_groupby_statistic(df[k]) if variable_stats[k].type != base.S_TYPE_UNSUPPORTED else None) for k in df.columns},
         # 'correlations': {'pearson': dfcorrPear, 'spearman': dfcorrSpear}
         'correlations': {'pearson': dfcorrPear}
     })[0]
+    end = time.time()
+
+    #time-profiling
+    if verbose:
+        print("Total time elapsed in getting final describe results passed to `to_html` is ", end-start)
+    
+
+    return results

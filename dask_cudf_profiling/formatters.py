@@ -3,6 +3,10 @@
 import numpy as np
 import cupy
 
+#dask_cudf profiling edit. 
+#Adding verbose call
+verbose = True
+
 SKEWNESS_CUTOFF = 20
 DEFAULT_FLOAT_FORMATTER = u'dask_profiling.__default_float_formatter'
 

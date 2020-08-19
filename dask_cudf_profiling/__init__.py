@@ -12,6 +12,9 @@ from dask_cudf_profiling.describe import describe as describe_df
 from dask_cudf_profiling.report import to_html
 import time
 
+#dask_cudf profiling edit. 
+#Adding verbose call
+verbose = True
 
 NO_OUTPUTFILE = "dask_profiling.no_outputfile"
 DEFAULT_OUTPUTFILE = "dask_profiling.default_outputfile"
@@ -70,8 +73,9 @@ class ProfileReport(object):
         description_set = describe_df(df, **kwargs)
         end = time.time()
 
-        #time-profiling
-        print("Total time elapsed in describe_df() is ", end-start)
+        if verbose:
+            #time-profiling
+            print("Total time elapsed in describe_df() is ", end-start)
 
         #Rahul dask_cudf profiling -- temp part of code
         #return description_set
@@ -81,8 +85,10 @@ class ProfileReport(object):
         self.html = to_html(sample,
                             description_set)
         end = time.time()
-        #time-profiling
-        print("Total time elapsed in to_html() is ", end-start)
+
+        if verbose:
+            #time-profiling
+            print("Total time elapsed in to_html() is ", end-start)
 
 
         self.description_set = description_set
