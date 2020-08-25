@@ -213,7 +213,7 @@ def describe_numeric_1d(series, **kwargs):
     return stats
 
 
-def describe_date_1d(series):
+def describe_date_1d(series, **kwargs):
     """Compute summary statistics of a date (`TYPE_DATE`) variable (a Series).
 
     Also create histograms (mini an full) of its distribution.
@@ -244,7 +244,7 @@ def describe_date_1d(series):
 
     #dask_cudf profiling timing
     start = time.time()
-    stats['histogram'], stats['mini_histogram'] = get_histograms(series, **kwargs)
+    #stats['histogram'], stats['mini_histogram'] = get_histograms(series, **kwargs)
     end = time.time()
     
     #time-profiling
