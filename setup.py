@@ -14,14 +14,14 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='dask-profiling',
-    version='1.4.2',
-    author='Jos Polfliet',
-    author_email='jos.polfliet+panpro@gmail.com',
-    packages=['dask_profiling'],
-    url='https://github.com/brunompacheco/pandas-profiling',
+    name='dask-cudf-profiling',
+    version='1.0.0',
+    author='Rahul Bhojwani',
+    author_email='rahulbhojwani2003@gmail.com',
+    packages=['dask_cudf_profiling'],
+    url='https://github.com/think-high/dask_cudf-profiling',
     license='MIT',
-    description='Generate profile report for dask DataFrame',
+    description='Generate profile report for dask cudf DataFrame',
     install_requires=[
         # "pandas>=0.19",
         "dask>=2.11.0",
@@ -48,7 +48,7 @@ setup(
         'Programming Language :: Python :: 3.7'
 
     ],
-    keywords='dask data-science data-analysis python jupyter ipython',
+    keywords='dask cudf data-science data-analysis python jupyter ipython',
     long_description=long_description,
     long_description_content_type='text/markdown'
 
