@@ -16,8 +16,8 @@ import time
 #Adding verbose call
 verbose = True
 
-NO_OUTPUTFILE = "dask_profiling.no_outputfile"
-DEFAULT_OUTPUTFILE = "dask_profiling.default_outputfile"
+NO_OUTPUTFILE = "dask_cudf_profiling.no_outputfile"
+DEFAULT_OUTPUTFILE = "dask_cudf_profiling.default_outputfile"
 
 class ProfileReport(object):
     """Generate a profile report from a Dataset stored as a dask `DataFrame`.
